@@ -1,4 +1,4 @@
-package utils
+package server_utils
 
 import (
     "context"
@@ -12,13 +12,14 @@ import (
     "github.com/hashicorp/go-uuid"
     pkgerr "github.com/pkg/errors"
 
+    "github.com/source-con/utils"
     error2 "github.com/source-con/utils/errors"
     "github.com/source-con/utils/logger"
 )
 
 // LatencyLoggerMiddleware is Gin middleware which logs the latency of the request
 func LatencyLoggerMiddleware() gin.HandlerFunc {
-    log := logger.GetLoggerInstance()
+    log := logger.GetInstance()
 
     return func(c *gin.Context) {
         start := time.Now()
@@ -29,7 +30,7 @@ func LatencyLoggerMiddleware() gin.HandlerFunc {
 
         log.Debug(context.Background(), "response latency", map[string]interface{}{
             "latency":   latency,
-            "requestID": c.GetString(string(RequestIDCtxKey)),
+            "requestID": c.GetString(string(utils.RequestIDCtxKey)),
             "method":    c.Request.Method,
             "path":      c.Request.URL.Path,
         })
@@ -38,7 +39,7 @@ func LatencyLoggerMiddleware() gin.HandlerFunc {
 
 // RequestIDMiddleware is Gin middleware which generates a requestID and sets it in the context
 func RequestIDMiddleware() gin.HandlerFunc {
-    log := logger.GetLoggerInstance()
+    log := logger.GetInstance()
 
     return func(c *gin.Context) {
         requestID, err := uuid.GenerateUUID()
@@ -47,7 +48,7 @@ func RequestIDMiddleware() gin.HandlerFunc {
         }
 
         c.Header("request-id", requestID)
-        c.Set(string(RequestIDCtxKey), requestID)
+        c.Set(string(utils.RequestIDCtxKey), requestID)
 
         c.Next()
     }
@@ -92,7 +93,7 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
         tokenString := parts[1]
 
         // parse token
-        token, err := ParseToken(tokenString, secret)
+        token, err := utils.ParseToken(tokenString, secret)
         if err != nil {
             c.AbortWithStatusJSON(http.StatusUnauthorized,
                 error2.HTTPError{

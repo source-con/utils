@@ -41,8 +41,8 @@ type pgLogger struct {
 var once sync.Once
 var log Logger
 
-// GetLoggerInstance initializes the logger.
-func GetLoggerInstance() Logger {
+// GetInstance initializes the logger.
+func GetInstance() Logger {
     once.Do(func() {
         initLogger()
     })

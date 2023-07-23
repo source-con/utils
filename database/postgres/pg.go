@@ -24,7 +24,7 @@ type Config struct {
 
 // GetConnection returns a new postgres connection
 func GetConnection(cfg *Config) (*gorm.DB, error) {
-    log := logger.GetLoggerInstance()
+    log := logger.GetInstance()
     pgLogger := logger.InitPGLogger()
 
     pgDB, err := gorm.Open(postgres.New(
