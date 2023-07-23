@@ -1,4 +1,4 @@
-module source/utils
+module github.com/source-con/utils
 
 go 1.20
 
