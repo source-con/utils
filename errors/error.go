@@ -1,4 +1,4 @@
-package utils
+package errors
 
 const ISE = "internal server error"
 const SWR = "something went wrong"
@@ -9,7 +9,6 @@ type AppError struct {
     Code       int
     Message    string
     Err        error
-    Caller     string
     Resolution string
     Meta       interface{}
 }
@@ -19,7 +18,6 @@ type HTTPError struct {
     Code       int         `json:"code"`
     Message    string      `json:"message"`
     Err        string      `json:"error"`
-    Caller     string      `json:"caller"`
     Resolution string      `json:"resolution,omitempty"`
     Meta       interface{} `json:"meta,omitempty"`
 }
@@ -42,10 +40,9 @@ func (e AppError) As(err any) bool {
 }
 
 // New creates a new AppError.
-func New(code int, caller string, msg string, resolution string, err error, meta interface{}) *AppError {
+func New(code int, msg string, resolution string, err error, meta interface{}) *AppError {
     return &AppError{
         Code:       code,
-        Caller:     caller,
         Message:    msg,
         Resolution: resolution,
         Meta:       meta,

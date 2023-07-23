@@ -1,4 +1,4 @@
-package utils
+package logger
 
 import (
     "context"
@@ -9,6 +9,8 @@ import (
     "github.com/rs/zerolog"
 
     gormLogger "gorm.io/gorm/logger"
+
+    "github.com/source-con/utils"
 )
 
 // Logger is the interface for the logger.
@@ -39,8 +41,8 @@ type pgLogger struct {
 var once sync.Once
 var log Logger
 
-// GetInstance initializes the logger.
-func GetInstance() Logger {
+// GetLoggerInstance initializes the logger.
+func GetLoggerInstance() Logger {
     once.Do(func() {
         initLogger()
     })
@@ -115,9 +117,9 @@ func addRequestIDToFields(ctx context.Context, fields map[string]interface{}) ma
         return fields
     }
 
-    if val := ctx.Value(RequestIDCtxKey); val != nil {
+    if val := ctx.Value(utils.RequestIDCtxKey); val != nil {
         if requestID, ok := val.(string); ok {
-            fields[string(RequestIDCtxKey)] = requestID
+            fields[string(utils.RequestIDCtxKey)] = requestID
         }
     }
 

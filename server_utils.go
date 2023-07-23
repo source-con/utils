@@ -7,21 +7,18 @@ import (
     "time"
 
     "github.com/gin-gonic/gin"
+    "github.com/go-playground/validator/v10"
     jwtv5 "github.com/golang-jwt/jwt/v5"
     "github.com/hashicorp/go-uuid"
-)
+    pkgerr "github.com/pkg/errors"
 
-type ContextKey string
-
-const (
-    RequestIDCtxKey ContextKey = "requestID"
-    UserRoleCtxKey  ContextKey = "role"
-    UserIDCtxKey    ContextKey = "userID"
+    error2 "github.com/source-con/utils/errors"
+    "github.com/source-con/utils/logger"
 )
 
 // LatencyLoggerMiddleware is Gin middleware which logs the latency of the request
 func LatencyLoggerMiddleware() gin.HandlerFunc {
-    log := GetInstance()
+    log := logger.GetLoggerInstance()
 
     return func(c *gin.Context) {
         start := time.Now()
@@ -41,7 +38,7 @@ func LatencyLoggerMiddleware() gin.HandlerFunc {
 
 // RequestIDMiddleware is Gin middleware which generates a requestID and sets it in the context
 func RequestIDMiddleware() gin.HandlerFunc {
-    log := GetInstance()
+    log := logger.GetLoggerInstance()
 
     return func(c *gin.Context) {
         requestID, err := uuid.GenerateUUID()
@@ -56,8 +53,6 @@ func RequestIDMiddleware() gin.HandlerFunc {
     }
 }
 
-var authMiddlewareCaller = "authMiddleware"
-
 // AuthMiddleware is a Gin middleware to authenticate the user using JWT
 func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
     return func(c *gin.Context) {
@@ -66,11 +61,10 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
         if accessToken == "" {
             c.AbortWithStatusJSON(
                 http.StatusUnauthorized,
-                HTTPError{
+                error2.HTTPError{
                     Code:       http.StatusUnauthorized,
                     Message:    "empty access token",
                     Err:        "empty access token provided",
-                    Caller:     authMiddlewareCaller,
                     Resolution: "login again / provide access token",
                     Meta:       nil,
                 },
@@ -84,11 +78,10 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
         if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
             c.AbortWithStatusJSON(
                 http.StatusUnauthorized,
-                HTTPError{
+                error2.HTTPError{
                     Code:       http.StatusUnauthorized,
                     Message:    "invalid access token",
                     Err:        "invalid access token provided",
-                    Caller:     authMiddlewareCaller,
                     Resolution: "login again / provide valid access token",
                     Meta:       nil,
                 })
@@ -102,11 +95,10 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
         token, err := ParseToken(tokenString, secret)
         if err != nil {
             c.AbortWithStatusJSON(http.StatusUnauthorized,
-                HTTPError{
+                error2.HTTPError{
                     Code:       http.StatusUnauthorized,
                     Message:    "invalid access token",
                     Err:        err.Error(),
-                    Caller:     authMiddlewareCaller,
                     Resolution: "login again / provide valid access token",
                     Meta:       nil,
                 })
@@ -117,12 +109,11 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
         mapClaims, ok := token.Claims.(jwtv5.MapClaims)
         if !ok {
             c.AbortWithStatusJSON(http.StatusUnauthorized,
-                HTTPError{
+                error2.HTTPError{
                     Code:       http.StatusUnauthorized,
-                    Message:    ISE,
+                    Message:    error2.ISE,
                     Err:        "failed to parse claimKeys",
-                    Caller:     authMiddlewareCaller,
-                    Resolution: TAL,
+                    Resolution: error2.TAL,
                     Meta:       nil,
                 })
 
@@ -131,11 +122,10 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
 
         userRole := mapClaims["role"]
         if userRole == nil || userRole == "unknown" {
-            c.AbortWithStatusJSON(http.StatusForbidden, HTTPError{
+            c.AbortWithStatusJSON(http.StatusForbidden, error2.HTTPError{
                 Code:       http.StatusForbidden,
                 Message:    "access forbidden: unknown user role",
                 Err:        "unknown user role",
-                Caller:     authMiddlewareCaller,
                 Resolution: "login again",
                 Meta:       nil,
             })
@@ -148,5 +138,50 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
         }
 
         c.Next()
+    }
+}
+
+func ErrorMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        c.Writer.Header().Set("Content-Type", "application/json; charset=utf-8")
+        c.Next()
+
+        httpError := new(error2.HTTPError)
+        httpError.Code = http.StatusInternalServerError
+        httpError.Message = "Internal Server Error"
+        httpError.Resolution = "Please try again later"
+        httpError.Meta = nil
+        errs := c.Errors
+
+        if len(errs) > 0 {
+            err := errs[0].Err
+            httpError.Err = err.Error()
+
+            appErr := new(error2.AppError)
+            validationErr := new(validator.ValidationErrors)
+            ginErr := new(gin.Error)
+
+            switch {
+            case pkgerr.As(err, validationErr):
+                httpError.Message = validationErr.Error()
+                httpError.Code = http.StatusBadRequest
+                httpError.Message = "Bad Request"
+                httpError.Resolution = "Provide valid data and try again!"
+                c.JSON(httpError.Code, httpError)
+            case pkgerr.As(err, ginErr):
+                httpError.Message = ginErr.Error()
+                httpError.Meta = ginErr.Meta
+                c.JSON(httpError.Code, httpError)
+            case pkgerr.As(err, appErr):
+                httpError.Code = appErr.Code
+                httpError.Resolution = appErr.Resolution
+                httpError.Message = appErr.Message
+                httpError.Err = appErr.Err.Error()
+
+                c.JSON(httpError.Code, httpError)
+            default:
+                c.JSON(http.StatusInternalServerError, httpError)
+            }
+        }
     }
 }
