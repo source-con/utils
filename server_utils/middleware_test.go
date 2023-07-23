@@ -40,15 +40,20 @@ func Test_LatencyLoggerMiddleware(t *testing.T) {
 
     svr := gin.New()
 
+    svr.Use(LatencyLoggerMiddleware())
+
+    svr.GET("/health", func(c *gin.Context) {
+        c.Status(http.StatusOK)
+    })
+
     svr.ServeHTTP(rec, req)
 
     w.Close()
     os.Stdout = stdout
 
     t.Run("successfully printed latency log", func(t *testing.T) {
-        LatencyLoggerMiddleware()
         out := buf.Bytes()
-        assert.Equal(t, strings.Contains(string(out), "request latency"), true)
+        assert.Equal(t, strings.Contains(string(out), "response latency"), true)
     })
 }
 
