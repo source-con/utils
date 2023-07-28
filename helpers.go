@@ -11,6 +11,7 @@ import (
     "gorm.io/gorm"
 
     "github.com/source-con/utils/errors"
+    "github.com/source-con/utils/logger"
 )
 
 var table = [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
@@ -59,5 +60,14 @@ func GetPGDBFromCtx(ctx context.Context, db *gorm.DB) *gorm.DB {
 
 // GeneratePasswordHash generates the bcrypt hash
 func GeneratePasswordHash(password string) ([]byte, error) {
-    return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+    log := logger.GetInstance()
+
+    hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+    if err != nil {
+        log.Error(context.Background(), err, "failed to generate password hash", nil)
+
+        return nil, errors.New(http.StatusInternalServerError, "failed to generate password hash", errors.TAL, err, nil)
+    }
+
+    return hash, nil
 }
