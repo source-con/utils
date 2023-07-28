@@ -1,4 +1,4 @@
-package server_utils
+package serverutils
 
 import (
     "context"
@@ -13,7 +13,7 @@ import (
     pkgerr "github.com/pkg/errors"
 
     "github.com/source-con/utils"
-    error2 "github.com/source-con/utils/errors"
+    "github.com/source-con/utils/errors"
     "github.com/source-con/utils/logger"
 )
 
@@ -62,7 +62,7 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
         if accessToken == "" {
             c.AbortWithStatusJSON(
                 http.StatusUnauthorized,
-                error2.HTTPError{
+                errors.HTTPError{
                     Code:       http.StatusUnauthorized,
                     Message:    "empty access token",
                     Err:        "empty access token provided",
@@ -79,7 +79,7 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
         if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
             c.AbortWithStatusJSON(
                 http.StatusUnauthorized,
-                error2.HTTPError{
+                errors.HTTPError{
                     Code:       http.StatusUnauthorized,
                     Message:    "invalid access token",
                     Err:        "invalid access token provided",
@@ -96,7 +96,7 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
         token, err := utils.ParseToken(tokenString, secret)
         if err != nil {
             c.AbortWithStatusJSON(http.StatusUnauthorized,
-                error2.HTTPError{
+                errors.HTTPError{
                     Code:       http.StatusUnauthorized,
                     Message:    "invalid access token",
                     Err:        err.Error(),
@@ -110,11 +110,11 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
         mapClaims, ok := token.Claims.(jwtv5.MapClaims)
         if !ok {
             c.AbortWithStatusJSON(http.StatusUnauthorized,
-                error2.HTTPError{
+                errors.HTTPError{
                     Code:       http.StatusUnauthorized,
-                    Message:    error2.ISE,
+                    Message:    errors.ISE,
                     Err:        "failed to parse claimKeys",
-                    Resolution: error2.TAL,
+                    Resolution: errors.TAL,
                     Meta:       nil,
                 })
 
@@ -123,7 +123,7 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
 
         userRole := mapClaims["role"]
         if userRole == nil || userRole == "unknown" {
-            c.AbortWithStatusJSON(http.StatusForbidden, error2.HTTPError{
+            c.AbortWithStatusJSON(http.StatusForbidden, errors.HTTPError{
                 Code:       http.StatusForbidden,
                 Message:    "access forbidden: unknown user role",
                 Err:        "unknown user role",
@@ -147,7 +147,7 @@ func ErrorMiddleware() gin.HandlerFunc {
         c.Writer.Header().Set("Content-Type", "application/json; charset=utf-8")
         c.Next()
 
-        httpError := new(error2.HTTPError)
+        httpError := new(errors.HTTPError)
         httpError.Code = http.StatusInternalServerError
         httpError.Message = "Internal Server Error"
         httpError.Resolution = "Please try again later"
@@ -158,7 +158,7 @@ func ErrorMiddleware() gin.HandlerFunc {
             err := errs[0].Err
             httpError.Err = err.Error()
 
-            appErr := new(error2.AppError)
+            appErr := new(errors.AppError)
             validationErr := new(validator.ValidationErrors)
             ginErr := new(gin.Error)
 

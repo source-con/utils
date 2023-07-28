@@ -7,6 +7,7 @@ import (
     "net/http"
 
     "github.com/jinzhu/copier"
+    "golang.org/x/crypto/bcrypt"
     "gorm.io/gorm"
 
     "github.com/source-con/utils/errors"
@@ -54,4 +55,9 @@ func GetPGDBFromCtx(ctx context.Context, db *gorm.DB) *gorm.DB {
     }
 
     return db
+}
+
+// GeneratePasswordHash generates the bcrypt hash
+func GeneratePasswordHash(password string) ([]byte, error) {
+    return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
