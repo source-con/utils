@@ -5,8 +5,8 @@ import (
 
     "gorm.io/gorm"
 
-    "github.com/source-con/utils"
     "github.com/source-con/utils/database/transaction"
+    "github.com/source-con/utils/types"
 )
 
 type PgTx struct {
@@ -15,7 +15,7 @@ type PgTx struct {
 
 func (p PgTx) Transaction(ctx context.Context, f func(ctx context.Context) error) error {
     return p.pgConn.Transaction(func(tx *gorm.DB) error {
-        ctx = context.WithValue(ctx, utils.TxCtxKey, tx)
+        ctx = context.WithValue(ctx, types.TxCtxKey, tx)
 
         return f(ctx)
     })

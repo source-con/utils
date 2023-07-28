@@ -12,6 +12,7 @@ import (
 
     "github.com/source-con/utils/errors"
     "github.com/source-con/utils/logger"
+    "github.com/source-con/utils/types"
 )
 
 var table = [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
@@ -49,7 +50,7 @@ func GetPGDBFromCtx(ctx context.Context, db *gorm.DB) *gorm.DB {
         return db
     }
 
-    if val := ctx.Value(TxCtxKey); val != nil {
+    if val := ctx.Value(types.TxCtxKey); val != nil {
         if tx, ok := val.(*gorm.DB); ok {
             return tx
         }

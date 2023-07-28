@@ -1,4 +1,4 @@
-package utils
+package types
 
 type ContextKey string
 

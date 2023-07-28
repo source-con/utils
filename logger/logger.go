@@ -10,7 +10,7 @@ import (
 
     gormLogger "gorm.io/gorm/logger"
 
-    "github.com/source-con/utils"
+    "github.com/source-con/utils/types"
 )
 
 // Logger is the interface for the logger.
@@ -117,9 +117,9 @@ func addRequestIDToFields(ctx context.Context, fields map[string]interface{}) ma
         return fields
     }
 
-    if val := ctx.Value(utils.RequestIDCtxKey); val != nil {
+    if val := ctx.Value(types.RequestIDCtxKey); val != nil {
         if requestID, ok := val.(string); ok {
-            fields[string(utils.RequestIDCtxKey)] = requestID
+            fields[string(types.RequestIDCtxKey)] = requestID
         }
     }
 

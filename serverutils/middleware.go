@@ -15,6 +15,7 @@ import (
     "github.com/source-con/utils"
     "github.com/source-con/utils/errors"
     "github.com/source-con/utils/logger"
+    "github.com/source-con/utils/types"
 )
 
 // LatencyLoggerMiddleware is Gin middleware which logs the latency of the request
@@ -30,7 +31,7 @@ func LatencyLoggerMiddleware() gin.HandlerFunc {
 
         log.Debug(context.Background(), "response latency", map[string]interface{}{
             "latency":   latency,
-            "requestID": c.GetString(string(utils.RequestIDCtxKey)),
+            "requestID": c.GetString(string(types.RequestIDCtxKey)),
             "method":    c.Request.Method,
             "path":      c.Request.URL.Path,
         })
@@ -48,7 +49,7 @@ func RequestIDMiddleware() gin.HandlerFunc {
         }
 
         c.Header("request-id", requestID)
-        c.Set(string(utils.RequestIDCtxKey), requestID)
+        c.Set(string(types.RequestIDCtxKey), requestID)
 
         c.Next()
     }
