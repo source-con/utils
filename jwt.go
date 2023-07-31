@@ -43,6 +43,8 @@ func GenerateRefreshToken(accessToken, secret string) (string, error) {
 		return "", ErrInvalidAccessToken
 	}
 
+	token.Claims.(jwtv5.MapClaims)["exp"] = time.Now().AddDate(1, 0, 0).Unix()
+
 	jwtv5.NewWithClaims(jwtv5.SigningMethodHS512, token.Claims)
 
 	signedToken, err := token.SignedString([]byte(secret))
