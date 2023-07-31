@@ -23,13 +23,13 @@ func GenerateAccessToken(ttl time.Duration, secret string, claims map[string]str
 	}
 
 	// iterate over claims and add them to jwt.MapClaims
-	for key, value := range jwtClaims {
+	for key, value := range claims {
 		jwtClaims[key] = value
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwtClaims)
 
-	signedToken, err := token.SignedString(secret)
+	signedToken, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return "", ErrGeneratingAccessToken
 	}
