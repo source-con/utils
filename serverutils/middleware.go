@@ -59,7 +59,7 @@ func RequestIDMiddleware() gin.HandlerFunc {
 }
 
 // AuthMiddleware is a Gin middleware to authenticate the user using JWT
-func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
+func AuthMiddleware(secret string, claimKeys ...types.Claim) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// get accessToken from context
 		accessToken := c.GetHeader("Authorization")
@@ -139,7 +139,9 @@ func AuthMiddleware(secret string, claimKeys ...string) gin.HandlerFunc {
 		}
 
 		for _, claim := range claimKeys {
-			c.Set(claim, mapClaims[claim])
+			if _, ok = mapClaims[string(claim)]; ok {
+				c.Set(string(claim), mapClaims[string(claim)])
+			}
 		}
 
 		c.Next()
@@ -231,5 +233,19 @@ func BasicAuth() gin.HandlerFunc {
 			Resolution: "check username and password and try again",
 			Meta:       nil,
 		})
+	}
+}
+
+func MetaInfo() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		meta := types.Meta{
+			IP:        c.ClientIP(),
+			UserAgent: c.Request.UserAgent(),
+			Role:      c.GetString("role"),
+			ID:        c.GetString("id"),
+		}
+
+		c.Set("meta", meta)
+		c.Next()
 	}
 }
